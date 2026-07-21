@@ -186,6 +186,7 @@ def get_dirs(path):
 def disk_to_mbtiles(directory_path, mbtiles_file, **kwargs):
 
     silent = kwargs.get('silent')
+    report_progress = kwargs.get('report_progress')
 
     if not silent:
         logger.info("Importing disk to MBTiles")
@@ -198,9 +199,30 @@ def disk_to_mbtiles(directory_path, mbtiles_file, **kwargs):
     #~ image_format = 'png'
     image_format = kwargs.get('format', 'png')
 
+    # NOTE(BH): if processing a quantized mesh terrain, look for layer.json as the metadata file
     try:
-        metadata = json.load(open(os.path.join(directory_path, 'metadata.json'), 'r'))
         image_format = kwargs.get('format')
+        if image_format == 'terrain':
+            layer_file_path = os.path.join(directory_path, 'layer.json')
+            if not os.path.exists(layer_file_path):
+                raise FileNotFoundError('ERROR: terrain layer.json file not found')
+            
+            with(open(os.path.join(layer_file_path), 'r', encoding='utf-8') as layerfile):
+                layerfile_content = layerfile.read()
+
+            metadata = {}
+            metadata['layer.json'] = layerfile_content
+
+            layerinfo = json.load(open(os.path.join(layer_file_path), 'r'))
+            metadata['name'] = layerinfo['name']
+            metadata['bounds'] = ','.join([str(x) for x in layerinfo['bounds']])
+            metadata['scheme'] = layerinfo['schema']
+            metadata['version'] = layerinfo['version']
+            metadata['description'] = layerinfo['description'] + ' Imported to MBTiles using Aluzion mb-util.'
+            metadata['projection'] = layerinfo['projection']
+        else:
+            metadata = json.load(open(os.path.join(directory_path, 'metadata.json'), 'r'))
+
         for name, value in metadata.items():
             cur.execute('insert into metadata (name, value) values (?, ?)',
                 (name, value))
@@ -256,6 +278,7 @@ def disk_to_mbtiles(directory_path, mbtiles_file, **kwargs):
                     else:
                         y = int(file_name)
 
+                    # NOTE(BH): account for files being .terrain (quantized mesh terrain)
                     if (ext == image_format):
                         if not silent:
                             logger.debug(' Read tile from Zoom (z): %i\tCol (x): %i\tRow (y): %i' % (z, x, y))
@@ -264,7 +287,7 @@ def disk_to_mbtiles(directory_path, mbtiles_file, **kwargs):
                             (?, ?, ?, ?);""",
                             (z, x, y, sqlite3.Binary(file_content)))
                         count = count + 1
-                        if (count % 100) == 0 and not silent:
+                        if (count % 100) == 0 and report_progress:
                             logger.info(" %s tiles inserted (%d tiles/sec)" % (count, count / (time.time() - start_time)))
                     elif (ext == 'grid.json'):
                         if not silent:

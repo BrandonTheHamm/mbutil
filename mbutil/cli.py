@@ -53,8 +53,9 @@ def main():
         default='xyz')
 
     parser.add_option('--image_format', dest='format',
-        help='''The format of the image tiles, either png, jpg, webp, pbf or mvt''',
-        choices=['png', 'jpg', 'pbf', 'webp', 'mvt'],
+        help='''The format of the image tiles, either png, jpg, webp, pbf, or mvt. '''
+        + '''Specify .terrain when working with quantized mesh terrain format.''',
+        choices=['png', 'jpg', 'pbf', 'webp', 'mvt', 'terrain'],
         default='png')
 
     parser.add_option('--grid_callback', dest='callback',
@@ -71,6 +72,11 @@ def main():
         help='''Dictate whether the operations should run silently''',
         action="store_true",
         default=False)
+    
+    parser.add_option('--progress', dest='report_progress',
+                      help='''Flag to indicate that mb-util's progress should be reported periodically''',
+                      action='store_true',
+                      default=True)
 
     parser.add_option('--cache_control', dest='cache_control',
         help='''Optional Cache-Control header value (e.g., 'max-age=31536000, immutable')''',
