@@ -206,7 +206,7 @@ def disk_to_mbtiles(directory_path, mbtiles_file, **kwargs):
             layer_file_path = os.path.join(directory_path, 'layer.json')
             if not os.path.exists(layer_file_path):
                 raise FileNotFoundError('ERROR: terrain layer.json file not found')
-            
+
             with(open(os.path.join(layer_file_path), 'r', encoding='utf-8') as layerfile):
                 layerfile_content = layerfile.read()
 
@@ -220,6 +220,7 @@ def disk_to_mbtiles(directory_path, mbtiles_file, **kwargs):
             metadata['version'] = layerinfo['version']
             metadata['description'] = layerinfo['description'] + ' Imported to MBTiles using Aluzion mb-util.'
             metadata['projection'] = layerinfo['projection']
+            metadata['format'] = image_format
         else:
             metadata = json.load(open(os.path.join(directory_path, 'metadata.json'), 'r'))
 
